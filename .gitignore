@@ -1,0 +1,21 @@
+# --- 중첩 저장소 / 대용량 데이터 (클라우드 동기화 제외) ---
+amazon-seller-entry-analysis/
+
+# --- 로컬 도구 / 캐시 / OS 잡파일 ---
+.DS_Store
+.omx/
+.playwright-mcp/
+.claude/
+
+# --- 파이썬 환경 / 빌드 산출물 ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# --- 대용량 데이터 포맷 (실수 방지용 광역 차단) ---
+*.duckdb
+*.parquet
+*.csv
+data/
