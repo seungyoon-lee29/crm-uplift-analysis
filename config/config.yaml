@@ -12,7 +12,9 @@ data:
   uplift_target: "visit"
 
 split:
-  test_size: 0.30
+  train_size: 0.60
+  validation_size: 0.20
+  test_size: 0.20
   random_state: 42
 
 # ── 비즈니스 가정 (Hillstrom 외부 — 명시적 가정) ──────────────────────

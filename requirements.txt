@@ -3,6 +3,7 @@ numpy>=1.24,<2
 pandas>=1.5,<2.2
 scikit-learn>=1.0
 scikit-uplift==0.5.1
+pyarrow>=15
 matplotlib>=3.5
 seaborn>=0.12
 pyyaml>=6.0

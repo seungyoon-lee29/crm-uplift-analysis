@@ -43,12 +43,12 @@ def fig_qini(test: pd.DataFrame) -> None:
 
 def fig_decile(dec: pd.DataFrame) -> None:
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    colors = ["#4f46e5" if v > 0 else "#dc2626" for v in dec["net_pc"]]
+    colors = ["#4f46e5" if v else "#dc2626" for v in dec["send_policy"]]
     ax.bar(dec["decile"], dec["net_pc"], color=colors)
     ax.axhline(0, color="#334155", lw=0.8)
     ax.set_xlabel("uplift 분위 (1=최상위)")
     ax.set_ylabel("한계 순이익 / 명 ($)")
-    ax.set_title("분위별 한계 순이익 — 음(-) 분위(빨강)는 발송 제외 후보")
+    ax.set_title("test 한계 순이익 — 파랑=validation에서 선택한 발송 분위")
     fig.tight_layout(); fig.savefig(FIG / "decile_net_profit.png", dpi=120); plt.close(fig)
 
 
@@ -69,10 +69,13 @@ def main() -> None:
     cfg = load_config()
     b = cfg["business"]
     FIG.mkdir(parents=True, exist_ok=True)
+    validation = pd.read_parquet(ROOT / "data" / "validation_with_uplift.parquet")
     test = pd.read_parquet(ROOT / "data" / "test_with_uplift.parquet")
-    aov = float(test.loc[test.conversion == 1, "spend"].mean())
-    dec = decile_table(test, cfg, aov)
-    sens = sensitivity(test, cfg, aov, np.round(np.arange(0.0, 1.0001, 0.05), 3))
+    aov = float(validation.loc[validation.conversion == 1, "spend"].mean())
+    validation_dec = decile_table(validation, cfg, aov)
+    selected_deciles = set(validation_dec.loc[validation_dec["net_pc"] > 0, "decile"].astype(int))
+    dec = decile_table(test, cfg, aov, selected_deciles=selected_deciles)
+    sens = sensitivity(validation, test, cfg, aov, np.round(np.arange(0.0, 1.0001, 0.05), 3))
     base_fatigue = b["optout_rate_per_send"] * b["customer_ltv"]
 
     fig_qini(test)

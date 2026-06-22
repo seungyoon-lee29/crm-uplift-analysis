@@ -21,18 +21,18 @@
 | **증분 사고** | 오픈율·전환율(평균)이 아니라 treated−control(증분)으로 의사결정. 무작위배정을 반사실로 활용 |
 | **지적 정직성** | "이메일은 평균적으로 먹힌다 → 다 보내도 틀리지 않다"를 먼저 인정. ML이 필요한 척 데이터를 심지 않음 |
 | **가정의 투명성** | 데이터에 없는 마진·LTV·수신거부는 `config`의 명시적 가정으로 분리하고 민감도로 다룸 |
-| **노이즈에 대한 겸손** | 분위별 증분의 표준오차를 직접 계산해 과대주장(=확정 sleeping-dog)을 거부 |
+| **노이즈에 대한 겸손** | train/validation/test를 분리하고 분위별 증분의 95% CI를 계산해 과대주장(=확정 sleeping-dog)을 거부 |
 
 ## 핵심 결과 3개
 
 1. **이메일은 평균적으로 강하게 먹힌다** — 발송군의 증분: visit **+57%**, conversion **+86%**, spend **+$0.60/명(+91%)**. → *"다 보내"가 그 자체로 틀린 건 아니다.* (결론을 조작하지 않는다는 출발점)
-2. **그러나 가치는 "발송당 이익"과 "음의 꼬리"에 있다** — uplift 모델(Qini AUC 0.030, Hillstrom 기준 정상)이 고객을 증분 가치로 정렬. 음(-)의 증분 분위를 제외하면 기본 가정에서 순이익 **+$477(+26%)**.
-3. **진짜 답은 채널 피로비에 달려 있다** — 수신거부 1건의 비용이 **~$0.15/통**을 넘으면 *전체발송은 순손실*로 돌아선다. 이메일(싸다)은 안전권, 푸시·SMS(피로비 큼)면 타겟팅이 정답.
+2. **하지만 ML 타겟팅은 자동 승리가 아니다** — uplift 모델은 랜덤보다 위(Qini AUC validation **0.047**, test **0.046**)지만, validation에서 고른 발송 분위 정책은 기본 이메일 가정의 test 평가에서 전체발송보다 **$1,033 낮았다**. 모델 신호가 약하면 정책 검증이 결론을 바꾼다.
+3. **진짜 답은 채널 피로비와 검증 방식에 달려 있다** — 수신거부 1건의 비용이 **~$0.17/통**을 넘으면 *전체발송은 순손실*로 돌아선다. 이메일(싸다)은 전체발송이 합리적일 수 있고, 푸시·SMS(피로비 큼)는 보수적 타겟팅/무발송까지 포함해 holdout 검증이 필요하다.
 
 ![채널 피로비 민감도](docs/figures/fatigue_sensitivity.png)
 ![분위별 한계 순이익](docs/figures/decile_net_profit.png)
 
-> **팀장 설득 한 줄**: *"다 보내라"가 옳은 건 채널이 이메일처럼 싸고 발송 예산이 무한할 때뿐입니다. 푸시·SMS이거나 발송 capacity가 유한하면, uplift 정렬이 발송당 이익을 올리고 음의 증분 꼬리를 잘라냅니다 — 그 손익분기를 이 표가 수치로 보여줍니다.*
+> **팀장 설득 한 줄**: *"이메일처럼 싼 채널에서는 다 보내도 됩니다. 다만 채널 피로비가 커지는 순간 전체발송은 손실로 돌아설 수 있고, ML 타겟팅도 validation/test로 검증하지 않으면 오히려 손해가 납니다 — 그 경계와 불확실성을 이 표가 수치로 보여줍니다."*
 
 ## 분석 질문 (R2 → Gap → 분해)
 
@@ -57,7 +57,7 @@ make all            # eda → model → incrementality → figures (재현 가�
 
 # 단계별:
 make eda            # 전체 ATE + H1 세그먼트 탐색 → docs/eda_findings.md
-make model          # uplift 모델 + Qini/AUUC → data/test_with_uplift.parquet
+make model          # uplift 모델 + validation/test Qini/AUUC → data/*_with_uplift.parquet
 make incrementality # 전체발송 vs 타겟발송 증분 이익 → docs/incrementality_report.md
 make figures        # 의사결정 차트 → docs/figures/
 ```
@@ -68,8 +68,8 @@ make figures        # 의사결정 차트 → docs/figures/
 config/config.yaml        # treatment 이진화·가정 파라미터(마진·LTV·발송비·수신거부)
 src/data.py               # Hillstrom 로드·이진화·검증(무작위배정·퍼널 단조성)
 src/eda.py                # Step2: 전체 ATE + H1(sleeping-dog) 세그먼트 탐색
-src/uplift.py             # Step3a: T-learner(TwoModels) + Qini/AUUC
-src/incrementality.py     # Step3b: 분위 한계분석 + 채널피로비 민감도
+src/uplift.py             # Step3a: T-learner(TwoModels) + validation/test Qini/AUUC
+src/incrementality.py     # Step3b: validation 정책 선택 → test 평가 + 채널피로비 민감도
 src/figures.py            # Qini·분위 순이익·민감도 차트
 docs/                     # eda_findings · incrementality_report · decisions · limitations · figures/
 report/final_report.md    # 의사결정 메모(팀장 설득)
@@ -78,5 +78,5 @@ report/final_report.md    # 의사결정 메모(팀장 설득)
 ## 정직한 한계 (요약 — 상세는 [docs/limitations.md](docs/limitations.md))
 
 - **수신거부·LTV가 데이터에 없다** → 채널피로비는 가정. 그래서 *단일 답이 아니라 민감도*로 제시.
-- **uplift 신호가 약하다**(Qini 0.030) → 분위별 증분은 노이즈(표준오차 ≈ ±0.004). "특정 분위 = 확정 sleeping-dog"은 과대주장이며, 실서비스에선 홀드아웃 재검증 필요.
+- **uplift 신호가 약하다**(test Qini 0.046) → 분위별 증분은 CI가 넓고, validation에서 좋아 보인 정책도 test에서 손해가 날 수 있다. "특정 분위 = 확정 sleeping-dog"은 과대주장이며, 실서비스에선 상시 홀드아웃 재검증 필요.
 - **2008년 단일 캠페인** → 시점·업종 일반화 제한. 방법론 데모로 해석.
