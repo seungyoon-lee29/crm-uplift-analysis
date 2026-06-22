@@ -20,7 +20,7 @@ import pandas as pd
 from sklift.metrics import perfect_qini_curve, qini_curve
 
 from src.data import load_config
-from src.incrementality import decile_table, sensitivity
+from src.incrementality import decile_table, select_topk, sensitivity, topk_curve
 
 ROOT = Path(__file__).resolve().parents[1]
 FIG = ROOT / "docs" / "figures"
@@ -48,8 +48,25 @@ def fig_decile(dec: pd.DataFrame) -> None:
     ax.axhline(0, color="#334155", lw=0.8)
     ax.set_xlabel("uplift 분위 (1=최상위)")
     ax.set_ylabel("한계 순이익 / 명 ($)")
-    ax.set_title("test 한계 순이익 — 파랑=validation에서 선택한 발송 분위")
+    ax.set_title("비연속 분위 cherry-pick의 불안정성 — 빨강(제외)이 test 최고 분위")
     fig.tight_layout(); fig.savefig(FIG / "decile_net_profit.png", dpi=120); plt.close(fig)
+
+
+def fig_topk(validation: pd.DataFrame, test: pd.DataFrame, cfg: dict,
+             aov: float, base_fatigue: float) -> None:
+    vg = topk_curve(validation, cfg, aov, base_fatigue)
+    tg = topk_curve(test, cfg, aov, base_fatigue)
+    k_star = select_topk(validation, cfg, aov, base_fatigue)
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    ax.plot(vg["k"] * 100, vg["cum_net"], label="validation (정책 선택)", color="#94a3b8", lw=2, marker="o", ms=3)
+    ax.plot(tg["k"] * 100, tg["cum_net"], label="test (성과 평가)", color="#4f46e5", lw=2, marker="o", ms=3)
+    ax.axvline(k_star * 100, color="#dc2626", ls="--", lw=1, label=f"validation k* = {k_star*100:.0f}%")
+    ax.axhline(0, color="#334155", lw=0.8)
+    ax.set_xlabel("발송 비율 k (uplift 상위 %)")
+    ax.set_ylabel("누적 순이익 ($)")
+    ax.set_title("top-k 정책 — validation에서 고른 k*의 test 누적 순이익")
+    ax.legend()
+    fig.tight_layout(); fig.savefig(FIG / "topk_policy.png", dpi=120); plt.close(fig)
 
 
 def fig_sensitivity(sens: pd.DataFrame, base_fatigue: float) -> None:
@@ -80,8 +97,9 @@ def main() -> None:
 
     fig_qini(test)
     fig_decile(dec)
+    fig_topk(validation, test, cfg, aov, base_fatigue)
     fig_sensitivity(sens, base_fatigue)
-    print(f"[saved] 3 figures → {FIG}")
+    print(f"[saved] 4 figures → {FIG}")
 
 
 if __name__ == "__main__":

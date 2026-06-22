@@ -26,13 +26,14 @@
 ## 핵심 결과 3개
 
 1. **이메일은 평균적으로 강하게 먹힌다** — 발송군의 증분: visit **+57%**, conversion **+86%**, spend **+$0.60/명(+91%)**. → *"다 보내"가 그 자체로 틀린 건 아니다.* (결론을 조작하지 않는다는 출발점)
-2. **하지만 ML 타겟팅은 자동 승리가 아니다** — uplift 모델은 랜덤보다 위(Qini AUC validation **0.047**, test **0.046**)지만, validation에서 고른 발송 분위 정책은 기본 이메일 가정의 test 평가에서 전체발송보다 **$1,033 낮았다**. 모델 신호가 약하면 정책 검증이 결론을 바꾼다.
-3. **진짜 답은 채널 피로비와 검증 방식에 달려 있다** — 수신거부 1건의 비용이 **~$0.17/통**을 넘으면 *전체발송은 순손실*로 돌아선다. 이메일(싸다)은 전체발송이 합리적일 수 있고, 푸시·SMS(피로비 큼)는 보수적 타겟팅/무발송까지 포함해 holdout 검증이 필요하다.
+2. **검증된 정책은 "다 보내라"였다 — 그리고 정책 *방식*이 결론을 가른다** — uplift 모델은 랜덤보다 위(Qini AUC validation **0.047**, test **0.046**)지만 신호가 약하다. 단조 **top-k% 정책**을 validation에서 고르면 **k\*=100%(전체발송)** → test에서 전체발송과 동률($0). 반면 비연속 분위를 cherry-pick한 정책은 같은 test에서 **−$1,033** 손실. *즉 모델보다 "정책을 어떻게 고르느냐(단조 vs 과적합)"가 더 중요하다.*
+3. **타겟팅의 가치는 채널 피로비에서 나온다** — 수신거부 1건 비용이 **~$0.17/통**을 넘으면 *전체발송은 순손실*. 그 구간에서 validation이 고르는 k\*가 100%→5%로 떨어지며 top-k 타겟팅이 전체발송을 이긴다. 이메일(싸다)은 전체발송이 합리적, 푸시·SMS는 타겟팅/무발송까지 포함해 holdout 검증이 필요하다.
 
+![top-k 정책: validation k* vs test 누적 순이익](docs/figures/topk_policy.png)
 ![채널 피로비 민감도](docs/figures/fatigue_sensitivity.png)
-![분위별 한계 순이익](docs/figures/decile_net_profit.png)
+![비연속 분위 cherry-pick의 불안정성](docs/figures/decile_net_profit.png)
 
-> **팀장 설득 한 줄**: *"이메일처럼 싼 채널에서는 다 보내도 됩니다. 다만 채널 피로비가 커지는 순간 전체발송은 손실로 돌아설 수 있고, ML 타겟팅도 validation/test로 검증하지 않으면 오히려 손해가 납니다 — 그 경계와 불확실성을 이 표가 수치로 보여줍니다."*
+> **팀장 설득 한 줄**: *"이메일처럼 싼 채널에서는 검증해보면 답이 '다 보내라'로 나옵니다 — 단, 정책을 노이즈에 과적합시키면(분위 cherry-pick) 오히려 $1,033을 잃습니다. 채널 피로비가 $0.17/통을 넘는 순간(푸시·SMS) 전체발송은 손실로 돌아서고, 그때 top-k 타겟팅의 가치가 살아납니다 — 그 경계를 이 표가 수치로 보여줍니다."*
 
 ## 분석 질문 (R2 → Gap → 분해)
 
@@ -69,7 +70,7 @@ config/config.yaml        # treatment 이진화·가정 파라미터(마진·LTV
 src/data.py               # Hillstrom 로드·이진화·검증(무작위배정·퍼널 단조성)
 src/eda.py                # Step2: 전체 ATE + H1(sleeping-dog) 세그먼트 탐색
 src/uplift.py             # Step3a: T-learner(TwoModels) + validation/test Qini/AUUC
-src/incrementality.py     # Step3b: validation 정책 선택 → test 평가 + 채널피로비 민감도
+src/incrementality.py     # Step3b: 단조 top-k 정책(validation k* 선택→test 평가) + 채널피로비 민감도 + decile 진단
 src/figures.py            # Qini·분위 순이익·민감도 차트
 docs/                     # eda_findings · incrementality_report · decisions · limitations · figures/
 report/final_report.md    # 의사결정 메모(팀장 설득)
