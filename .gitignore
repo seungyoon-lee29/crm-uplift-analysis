@@ -1,0 +1,13 @@
+# 파이썬 환경 / 캐시
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+
+# 대용량/재생성 가능 산출물 (그림·리포트(.md)는 추적, 중간 parquet은 제외)
+*.duckdb
+data/raw/
+data/*.parquet
+models/*.pkl

@@ -1,0 +1,27 @@
+# ── CRM Uplift 분석 설정 ─────────────────────────────────────────────
+# Hillstrom MineThatData Email Challenge (실 무작위배정 이메일 A/B).
+# 데이터에 직접 있는 것: visit / conversion / spend.
+# 데이터에 '없는' 것(=가정 파라미터): 마진율·발송비용·수신거부율·LTV.
+#   → 아래 값은 명시적 가정이며 report/limitations 에 그대로 노출한다.
+
+data:
+  # 이메일 두 종류(Mens/Womens)를 treatment=1, 무발송을 control=0 으로 이진화
+  treatment_positive: ["Mens E-Mail", "Womens E-Mail"]
+  treatment_control: "No E-Mail"
+  # uplift 모델 학습용 이진 타깃 (visit | conversion). 금액은 spend로 별도 계산.
+  uplift_target: "visit"
+
+split:
+  test_size: 0.30
+  random_state: 42
+
+# ── 비즈니스 가정 (Hillstrom 외부 — 명시적 가정) ──────────────────────
+business:
+  margin_rate: 0.30          # 매출총이익률
+  send_cost: 0.01            # 이메일 1통 발송비용($)
+  optout_rate_per_send: 0.001  # 1통당 추가 수신거부 확률(채널 피로)
+  customer_ltv: 50.0         # 수신거부로 잃는 고객 장기가치($)
+
+# uplift 4분면 임계 (예측 uplift 기준; EDA 후 보정)
+quadrant:
+  positive_threshold: 0.0    # 이 값 초과면 '설득가능/sure-thing'

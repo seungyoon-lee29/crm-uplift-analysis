@@ -1,0 +1,8 @@
+# 전용 venv 기준 핀 (numpy<2 가 scikit-uplift 0.5.1 호환의 핵심)
+numpy>=1.24,<2
+pandas>=1.5,<2.2
+scikit-learn>=1.0
+scikit-uplift==0.5.1
+matplotlib>=3.5
+seaborn>=0.12
+pyyaml>=6.0
