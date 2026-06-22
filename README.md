@@ -61,6 +61,7 @@ make eda            # 전체 ATE + H1 세그먼트 탐색 → docs/eda_findings.
 make model          # uplift 모델 + validation/test Qini/AUUC → data/*_with_uplift.parquet
 make incrementality # 전체발송 vs 타겟발송 증분 이익 → docs/incrementality_report.md
 make figures        # 의사결정 차트 → docs/figures/
+make ppt            # 발표 자료 → report/CRM_uplift_발표.pptx (13슬라이드)
 ```
 
 ## 구조

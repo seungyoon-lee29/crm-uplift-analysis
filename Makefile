@@ -21,6 +21,9 @@ incrementality:   ## Step3b: 전체발송 vs 타겟발송 증분 이익 → docs
 figures:          ## 의사결정 차트 → docs/figures/*.png
 	$(PY) -m src.figures
 
+ppt:              ## 발표 자료 → report/CRM_uplift_발표.pptx (figures 선행)
+	$(PY) scripts/build_ppt.py
+
 all: eda model incrementality figures  ## 전체 파이프라인 (재현 가능)
 	@echo "✅ 전체 파이프라인 완료"
 
